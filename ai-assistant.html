@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>RintisOne AI</title>
+  <style>
+    :root {
+      --primary: #b71c1c;
+      --accent: #d32f2f;
+      --light: #ffffff;
+      --gray: #e0e0e0;
+      --text: #333;
+    }
+
+    /* Global Reset & Body Background */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      scroll-behavior: smooth;
+    }
+    
+    /* Disable scrolling on the page */
+    html, body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to bottom, #ffffff, #ffe3ec);
+      color: var(--text);
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+    
+    /* Navbar */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background: rgba(183, 28, 28, 0.8);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 0 12px rgba(183, 28, 28, 0.5);
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 50px;
+      z-index: 1000;
+      transform: translateY(-100%);
+      opacity: 0;
+      animation: slideDownFade 0.8s ease-out forwards;
+    }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+      font-weight: bold;
+      font-size: 1.5rem;
+    }
+    
+    .logo img {
+      height: 40px;
+      margin-right: 10px;
+      filter: drop-shadow(0 0 6px #ffc1c1);
+    }
+    
+    .nav-links {
+      display: flex;
+      align-items: center;
+    }
+    
+    .nav-links a {
+      color: white;
+      text-decoration: none;
+      margin-left: 30px;
+      font-size: 1rem;
+      position: relative;
+      transition: color 0.3s ease;
+    }
+    
+    .nav-links a::after {
+      content: "";
+      position: absolute;
+      width: 0%;
+      height: 2px;
+      left: 0;
+      bottom: -5px;
+      background-color: white;
+      transition: width 0.3s ease;
+    }
+    
+    .nav-links a:hover {
+      color: #ffeaea;
+    }
+    
+    .nav-links a:hover::after {
+      width: 100%;
+    }
+
+    /* Menu Button - Hidden by default */
+    .menu-button {
+      display: none;
+      background: none;
+      border: none;
+      color: white;
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 5px;
+      transition: transform 0.3s ease;
+    }
+
+    .menu-button:hover {
+      transform: scale(1.1);
+    }
+
+    /* Dropdown Menu */
+    .dropdown-menu {
+      position: absolute;
+      top: 100%;
+      right: 50px;
+      background: rgba(183, 28, 28, 0.95);
+      backdrop-filter: blur(12px);
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      padding: 10px 0;
+      min-width: 150px;
+      display: none;
+      animation: dropdownFade 0.3s ease forwards;
+    }
+
+    .dropdown-menu.show {
+      display: block;
+    }
+
+    .dropdown-menu a {
+      display: block;
+      color: white;
+      text-decoration: none;
+      padding: 12px 20px;
+      font-size: 1rem;
+      transition: background-color 0.3s ease;
+      margin: 0;
+    }
+
+    .dropdown-menu a:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .dropdown-menu a::after {
+      display: none;
+    }
+    
+    @keyframes slideDownFade {
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes dropdownFade {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    /* Media Query for Portrait Mode (width <= height) */
+    @media (max-aspect-ratio: 1/1) {
+      .navbar {
+        padding: 15px 20px;
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      .menu-button {
+        display: block;
+      }
+
+      .dropdown-menu {
+        right: 20px;
+      }
+    }
+
+    /* Additional mobile responsiveness */
+    @media (max-width: 768px) {
+      .navbar {
+        padding: 15px 20px;
+      }
+
+      .dropdown-menu {
+        right: 20px;
+      }
+    }
+    
+    /* Fixed & Center-Aligned Chat Container (70% width) */
+    .chat-container {
+      position: fixed;
+      top: 55%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80%;
+      height: 80vh;
+      background: linear-gradient(to bottom right, #ffffff, #ffe3ec);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 0 8px 24px rgba(183, 28, 28, 0.1);
+      border-radius: 10px;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 500;
+    }
+    
+    .chat-container h2 {
+      font-size: 1.2rem;
+      color: var(--primary);
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    
+    /* Chat Box: Only this part is scrollable */
+    .chat-box {
+      width: 100%;
+      height: calc(100% - 70px);  /* leave room for title and input area */
+      overflow-y: auto;
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(8px);
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
+      animation: fadeIn 0.5s ease;
+      margin-bottom: 10px;
+    }
+    
+    .user-message, .ai-message {
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 5px;
+      width: fit-content;
+      animation: pop 0.3s ease;
+    }
+    
+    .user-message {
+      background: var(--primary);
+      color: white;
+      text-align: right;
+      margin-left: auto;
+    }
+    
+    .ai-message {
+      background: #ddd;
+      color: black;
+      text-align: left;
+      margin-right: auto;
+    }
+    
+    /* Input Area fixed inside chat container (non-scrolling) */
+    .input-area {
+      width: 100%;
+      display: flex;
+      background: rgba(255, 255, 255, 0.5);
+      backdrop-filter: blur(6px);
+      padding: 10px;
+      border-radius: 10px;
+      box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    input {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 1rem;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    button {
+      padding: 10px 20px;
+      background: linear-gradient(to right, var(--primary), var(--accent));
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+      margin-left: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      font-size: 1rem;
+    }
+    
+    button:hover {
+      transform: scale(1.05);
+      background: #a31919;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    @keyframes pop {
+      from {
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+    
+    @keyframes blink {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+    
+    .ai-message.thinking {
+      font-style: italic;
+      color: #888;
+      animation: blink 1s infinite;
+    }
+  </style>
+</head>
+<body>
+  
+  <!-- Navbar -->
+  <div class="navbar">
+    <div class="logo">
+      <img src="RintisLogo.png" alt="Logo" />
+      <a href="main.html" style="color:white; text-decoration:none;">RintisOne</a>
+    </div>
+    <div class="nav-links">
+      <a href="main.html">Home</a>
+      <a href="main.html#features">Our Offers</a>
+      <a href="main.html#about">About Us</a>
+      <a href="#main.html#contact">Contact</a>
+    </div>
+    <button class="menu-button" onclick="toggleDropdown()">☰</button>
+    <div class="dropdown-menu" id="dropdownMenu">
+      <a href="main.html">Home</a>
+      <a href="main.html#features">Our Offers</a>
+      <a href="main.html#about">About Us</a>
+      <a href="#main.html#contact">Contact</a>
+    </div>
+  </div>
+  
+  <!-- Chat Container (Fixed & Center-Aligned, 70% width) -->
+  <div class="chat-container">
+    <h2>RintisOne AI</h2>
+    <div class="chat-box" id="chat-box">
+      <div class="ai-message">Selamat datang di RintisOne! Bagaimana saya dapat membantu Anda hari ini?</div>
+    </div>
+    <div class="input-area">
+      <input type="text" id="user-input" placeholder="Type your message...">
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+  
+  <script>
+    document.getElementById("user-input").addEventListener("keydown", function(event) {
+        if (event.key === "Enter") {
+            event.preventDefault(); // Mencegah efek default dari Enter (misalnya form submit)
+            sendMessage();
+        }
+    });
+
+    // Dropdown menu functionality
+    function toggleDropdown() {
+        const dropdown = document.getElementById('dropdownMenu');
+        dropdown.classList.toggle('show');
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+        const dropdown = document.getElementById('dropdownMenu');
+        const menuButton = document.querySelector('.menu-button');
+        
+        if (!dropdown.contains(event.target) && !menuButton.contains(event.target)) {
+            dropdown.classList.remove('show');
+        }
+    });
+
+    async function sendMessage() {
+        let userInput = document.getElementById("user-input").value;
+        if (!userInput.trim()) return;
+
+        let chatBox = document.getElementById("chat-box");
+
+        // Display user message
+        let userMessage = document.createElement("div");
+        userMessage.className = "user-message";
+        userMessage.textContent = userInput;
+        chatBox.appendChild(userMessage);
+
+        // Show AI response placeholder
+        let aiMessage = document.createElement("div");
+        aiMessage.className = "ai-message";
+        aiMessage.innerHTML = "Mengetik...";
+        chatBox.appendChild(aiMessage);
+
+        try {
+            let response = await fetch("http://127.0.0.1:5000/chat", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ prompt: userInput })
+            });
+
+            let data = await response.json();
+            aiMessage.innerHTML = markdownToHTML(data.response);
+        } catch (error) {
+            aiMessage.innerHTML = "Error connecting to AI.";
+        }
+
+        document.getElementById("user-input").value = "";
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function markdownToHTML(text) {
+        return text
+            .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // Bold (**text**)
+            .replace(/\*(.*?)\*/g, "<em>$1</em>") // Italic (*text*)
+            .replace(/###\s*(.*?)\n/g, "<li>$1</li>") // Daftar poin (###)
+            .replace(/\n/g, "<br>") // Enter agar setiap baris terlihat
+            .replace(/(<li>.*?<\/li>)/g, "<ul>$1</ul>"); // Bungkus daftar dalam <ul>
+    }
+  </script>
+  
+</body>
+</html>
