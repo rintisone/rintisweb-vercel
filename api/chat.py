@@ -29,13 +29,14 @@ class handler(BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps({'error': 'No prompt provided'}).encode())
                 return
             
-            # OpenAI client
-            client = OpenAI(
-                base_url="https://openrouter.ai/api/v1",
-                api_key="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"
-            )
-            
-            INSTRUCTIONS = """nama kamu rintis,Kamu adalah asisten virtual yang ramah, responsif, dan solutif, siap membantu pelanggan RintisOne dalam memahami layanan, menyelesaikan kendala teknis, menjawab pertanyaan umum, serta memberikan panduan penggunaan platform.
+            # OpenAI client with error handling
+            try:
+                client = OpenAI(
+                    base_url="https://openrouter.ai/api/v1",
+                    api_key="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"
+                )
+                
+                INSTRUCTIONS = """nama kamu rintis,Kamu adalah asisten virtual yang ramah, responsif, dan solutif, siap membantu pelanggan RintisOne dalam memahami layanan, menyelesaikan kendala teknis, menjawab pertanyaan umum, serta memberikan panduan penggunaan platform.
 
 RintisOne adalah inisiatif kolaboratif mahasiswa dari berbagai universitas di Pulau Jawa yang bertujuan menjembatani perusahaan dengan ekosistem kampus. Kami memadukan riset lapangan, edukasi komunitas, dan teknologi seperti AI & Blockchain untuk menghasilkan strategi ekspansi yang akurat, transparan, dan berkelanjutan.
 
@@ -47,20 +48,29 @@ Daftar member RintisOne:
 - Fadhli Luthfanhadi, student at Universitas Diponegoro
 - Lalu Muhammad Zidan Alfinly, student at Universitas Indonesia
 - Silvan Nando Himawan, student at Universitas Pembangunan Nasional "Veteran" Yogyakarta"""
+                
+                response = client.chat.completions.create(
+                    model="deepseek/deepseek-r1-0528:free",
+                    messages=[
+                        {"role": "system", "content": INSTRUCTIONS},
+                        {"role": "user", "content": prompt}
+                    ],
+                    max_tokens=1000,
+                    temperature=0.7
+                )
+                
+                ai_response = response.choices[0].message.content.strip()
+                result = {'response': ai_response}
+                
+                self.wfile.write(json.dumps(result).encode())
+                
+            except Exception as openai_error:
+                error_response = {'error': f'AI service error: {str(openai_error)}'}
+                self.wfile.write(json.dumps(error_response).encode())
             
-            response = client.chat.completions.create(
-                model="deepseek/deepseek-r1-0528:free",
-                messages=[
-                    {"role": "system", "content": INSTRUCTIONS},
-                    {"role": "user", "content": prompt}
-                ]
-            )
-            
-            ai_response = response.choices[0].message.content.strip()
-            result = {'response': ai_response}
-            
-            self.wfile.write(json.dumps(result).encode())
-            
+        except json.JSONDecodeError:
+            error_response = {'error': 'Invalid JSON in request body'}
+            self.wfile.write(json.dumps(error_response).encode())
         except Exception as e:
             error_response = {'error': f'Server error: {str(e)}'}
             self.wfile.write(json.dumps(error_response).encode())
@@ -72,3 +82,11 @@ Daftar member RintisOne:
         self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
         self.end_headers()
+        
+    def do_GET(self):
+        # Handle GET requests (for testing)
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+        self.wfile.write(json.dumps({'message': 'RintisOne AI API is running'}).encode())
