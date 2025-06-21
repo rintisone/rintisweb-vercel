@@ -27,7 +27,7 @@ class handler(BaseHTTPRequestHandler):
             # Initialize OpenAI client
             client = OpenAI(
                 base_url="https://openrouter.ai/api/v1",
-                api_key="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"
+                api_key="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"
             )
             
             INSTRUCTIONS = """nama kamu rintis,Kamu adalah asisten virtual yang ramah, responsif, dan solutif, siap membantu pelanggan RintisOne dalam memahami layanan, menyelesaikan kendala teknis, menjawab pertanyaan umum, 
