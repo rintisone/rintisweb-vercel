@@ -1,8 +1,8 @@
 # api/chat.py
 from http.server import BaseHTTPRequestHandler
 import json
+import requests
 import os
-from openai import OpenAI
 
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
@@ -29,13 +29,8 @@ class handler(BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps({'error': 'No prompt provided'}).encode())
                 return
             
-            # OpenAI client with error handling
+            # Use requests instead of OpenAI client to avoid compatibility issues
             try:
-                client = OpenAI(
-                    base_url="https://openrouter.ai/api/v1",
-                    api_key="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"
-                )
-                
                 INSTRUCTIONS = """nama kamu rintis,Kamu adalah asisten virtual yang ramah, responsif, dan solutif, siap membantu pelanggan RintisOne dalam memahami layanan, menyelesaikan kendala teknis, menjawab pertanyaan umum, serta memberikan panduan penggunaan platform.
 
 RintisOne adalah inisiatif kolaboratif mahasiswa dari berbagai universitas di Pulau Jawa yang bertujuan menjembatani perusahaan dengan ekosistem kampus. Kami memadukan riset lapangan, edukasi komunitas, dan teknologi seperti AI & Blockchain untuk menghasilkan strategi ekspansi yang akurat, transparan, dan berkelanjutan.
@@ -49,23 +44,59 @@ Daftar member RintisOne:
 - Lalu Muhammad Zidan Alfinly, student at Universitas Indonesia
 - Silvan Nando Himawan, student at Universitas Pembangunan Nasional "Veteran" Yogyakarta"""
                 
-                response = client.chat.completions.create(
-                    model="deepseek/deepseek-r1-0528:free",
-                    messages=[
+                # Direct API call using requests
+                headers = {
+                    'Authorization': 'Bearer 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',
+                    'Content-Type': 'application/json',
+                    'HTTP-Referer': 'https://your-vercel-app.vercel.app',
+                    'X-Title': 'RintisOne AI Assistant'
+                }
+                
+                payload = {
+                    "model": "deepseek/deepseek-r1-0528:free",
+                    "messages": [
                         {"role": "system", "content": INSTRUCTIONS},
                         {"role": "user", "content": prompt}
                     ],
-                    max_tokens=1000,
-                    temperature=0.7
+                    "max_tokens": 1000,
+                    "temperature": 0.7
+                }
+                
+                response = requests.post(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers=headers,
+                    json=payload,
+                    timeout=30
                 )
                 
-                ai_response = response.choices[0].message.content.strip()
+                if response.status_code != 200:
+                    error_detail = response.text
+                    self.wfile.write(json.dumps({
+                        'error': f'API Error {response.status_code}: {error_detail}'
+                    }).encode())
+                    return
+                
+                response_data = response.json()
+                
+                if 'error' in response_data:
+                    self.wfile.write(json.dumps({
+                        'error': f'AI API Error: {response_data["error"]}'
+                    }).encode())
+                    return
+                
+                ai_response = response_data['choices'][0]['message']['content'].strip()
                 result = {'response': ai_response}
                 
                 self.wfile.write(json.dumps(result).encode())
                 
-            except Exception as openai_error:
-                error_response = {'error': f'AI service error: {str(openai_error)}'}
+            except requests.exceptions.Timeout:
+                error_response = {'error': 'AI service timeout. Please try again.'}
+                self.wfile.write(json.dumps(error_response).encode())
+            except requests.exceptions.RequestException as req_error:
+                error_response = {'error': f'Network error: {str(req_error)}'}
+                self.wfile.write(json.dumps(error_response).encode())
+            except Exception as api_error:
+                error_response = {'error': f'AI service error: {str(api_error)}'}
                 self.wfile.write(json.dumps(error_response).encode())
             
         except json.JSONDecodeError:
@@ -89,4 +120,4 @@ Daftar member RintisOne:
         self.send_header('Content-Type', 'application/json')
         self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
-        self.wfile.write(json.dumps({'message': 'RintisOne AI API is running'}).encode())
+        self.wfile.write(json.dumps({'message': 'RintisOne AI API is running', 'status': 'ok'}).encode())
