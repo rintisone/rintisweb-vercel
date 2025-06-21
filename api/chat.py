@@ -1,36 +1,18 @@
-# api/chat.py
-from http.server import BaseHTTPRequestHandler
-import json
+from flask import Flask, request, jsonify
+from flask_cors import CORS  # Import CORS
 from openai import OpenAI
 
-class handler(BaseHTTPRequestHandler):
-    def do_POST(self):
-        try:
-            # Set CORS headers
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
-            self.send_header('Access-Control-Allow-Headers', 'Content-Type')
-            self.end_headers()
-            
-            # Read request body
-            content_length = int(self.headers.get('Content-Length', 0))
-            post_data = self.rfile.read(content_length)
-            data = json.loads(post_data.decode('utf-8'))
-            
-            prompt = data.get('prompt', '').strip()
-            if not prompt:
-                self.wfile.write(json.dumps({'error': 'No prompt provided'}).encode())
-                return
-            
-            # Initialize OpenAI client
-            client = OpenAI(
-                base_url="https://openrouter.ai/api/v1",
-                api_key="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"
-            )
-            
-            INSTRUCTIONS = """nama kamu rintis,Kamu adalah asisten virtual yang ramah, responsif, dan solutif, siap membantu pelanggan RintisOne dalam memahami layanan, menyelesaikan kendala teknis, menjawab pertanyaan umum, 
+app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
+
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key="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"
+    # api_key="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"
+)
+
+INSTRUCTIONS = """
+nama kamu rintis,Kamu adalah asisten virtual yang ramah, responsif, dan solutif, siap membantu pelanggan RintisOne dalam memahami layanan, menyelesaikan kendala teknis, menjawab pertanyaan umum, 
 serta memberikan panduan penggunaan platform.
 
 RintisOne adalah inisiatif kolaboratif mahasiswa dari berbagai universitas di Pulau Jawa yang bertujuan menjembatani perusahaan dengan ekosistem kampus. Kami memadukan riset lapangan, edukasi komunitas, dan teknologi seperti AI & Blockchain untuk menghasilkan strategi ekspansi yang akurat, transparan, dan berkelanjutan.
@@ -43,30 +25,29 @@ Daftar member RintisOne:
 - Sultan Alexander Muhammad Rasyid, student at Institut Pertanian Bogor
 - Fadhli Luthfanhadi, student at Universitas Diponegoro
 - Lalu Muhammad Zidan Alfinly, student at Universitas Indonesia
-- Silvan Nando Himawan, student at Universitas Pembangunan Nasional "Veteran" Yogyakarta"""
-            
-            # Make API call using OpenAI client
-            response = client.chat.completions.create(
-                model="mistralai/mistral-small-3.2-24b-instruct:free",
-                messages=[
-                    {"role": "system", "content": INSTRUCTIONS},
-                    {"role": "user", "content": prompt}
-                ]
-            )
-            
-            ai_response = response.choices[0].message.content.strip()
-            result = {'response': ai_response}
-            
-            self.wfile.write(json.dumps(result).encode())
-            
-        except Exception as e:
-            error_response = {'error': f'Server error: {str(e)}'}
-            self.wfile.write(json.dumps(error_response).encode())
-    
-    def do_OPTIONS(self):
-        # Handle preflight CORS requests
-        self.send_response(200)
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
-        self.end_headers()
+- Silvan Nando Himawan, student at Universitas Pembangunan Nasional "Veteran" Yogyakarta
+"""
+
+def chat_with_gpt(prompt):
+    response = client.chat.completions.create(
+        model="mistralai/mistral-small-3.2-24b-instruct:free",
+        messages=[
+            {"role": "system", "content": INSTRUCTIONS},
+            {"role": "user", "content": prompt}
+        ]
+    )
+    return response.choices[0].message.content.strip()
+
+@app.route("/chat", methods=["POST"])
+def chat():
+    data = request.json
+    prompt = data.get("prompt", "")
+
+    if not prompt:
+        return jsonify({"error": "No prompt provided"}), 400
+
+    response = chat_with_gpt(prompt)
+    return jsonify({"response": response})
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
