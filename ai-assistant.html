@@ -246,8 +246,6 @@
       border-radius: 5px;
       width: fit-content;
       animation: pop 0.3s ease;
-      max-width: 80%;
-      word-wrap: break-word;
     }
     
     .user-message {
@@ -297,16 +295,10 @@
       font-size: 1rem;
     }
     
-    button:hover:not(:disabled) {
+    button:hover {
       transform: scale(1.05);
       background: #a31919;
       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-
-    button:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-      transform: none;
     }
     
     /* Animations */
@@ -369,16 +361,14 @@
     </div>
     <div class="input-area">
       <input type="text" id="user-input" placeholder="Type your message...">
-      <button id="send-btn" onclick="sendMessage()">Send</button>
+      <button onclick="sendMessage()">Send</button>
     </div>
   </div>
   
   <script>
-    let isProcessing = false;
-
     document.getElementById("user-input").addEventListener("keydown", function(event) {
-        if (event.key === "Enter" && !isProcessing) {
-            event.preventDefault();
+        if (event.key === "Enter") {
+            event.preventDefault(); // Mencegah efek default dari Enter (misalnya form submit)
             sendMessage();
         }
     });
@@ -399,121 +389,83 @@
         }
     });
 
-    async function sendMessage() {
-        if (isProcessing) return;
+async function sendMessage() {
+    let userInput = document.getElementById("user-input").value;
+    if (!userInput.trim()) return;
 
-        let userInput = document.getElementById("user-input").value;
-        if (!userInput.trim()) return;
+    let chatBox = document.getElementById("chat-box");
 
-        isProcessing = true;
-        const sendBtn = document.getElementById("send-btn");
-        const userInputField = document.getElementById("user-input");
-        
-        // Disable input and button
-        sendBtn.disabled = true;
-        userInputField.disabled = true;
-        sendBtn.textContent = "Sending...";
+    // Display user message
+    let userMessage = document.createElement("div");
+    userMessage.className = "user-message";
+    userMessage.textContent = userInput;
+    chatBox.appendChild(userMessage);
 
-        let chatBox = document.getElementById("chat-box");
+    // Show AI response placeholder
+    let aiMessage = document.createElement("div");
+    aiMessage.className = "ai-message thinking";
+    aiMessage.innerHTML = "Rintis sedang mengetik...";
+    chatBox.appendChild(aiMessage);
 
-        // Display user message
-        let userMessage = document.createElement("div");
-        userMessage.className = "user-message";
-        userMessage.textContent = userInput;
-        chatBox.appendChild(userMessage);
+    try {
+        // Use the correct API endpoint
+        let response = await fetch("/api/chat", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify({ prompt: userInput })
+        });
 
-        // Show AI response placeholder
-        let aiMessage = document.createElement("div");
-        aiMessage.className = "ai-message thinking";
-        aiMessage.innerHTML = "Rintis sedang mengetik...";
-        chatBox.appendChild(aiMessage);
+        // Remove thinking class
+        aiMessage.classList.remove("thinking");
 
-        // Clear input immediately
-        userInputField.value = "";
-
-        try {
-            // Create AbortController for timeout
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
-            const response = await fetch("/api/chat", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json"
-                },
-                body: JSON.stringify({ prompt: userInput }),
-                signal: controller.signal
-            });
-
-            clearTimeout(timeoutId);
-
-            // Remove thinking class
-            aiMessage.classList.remove("thinking");
-
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            const data = await response.json();
-            
-            if (data.error) {
-                throw new Error(data.error);
-            }
-            
-            // Process the response
-            if (data.response) {
-                aiMessage.innerHTML = markdownToHTML(data.response);
-            } else {
-                throw new Error("No response received from AI");
-            }
-            
-        } catch (error) {
-            console.error('Error details:', error);
-            aiMessage.classList.remove("thinking");
-            
-            // Provide user-friendly error messages
-            let errorMessage = "Maaf, saya sedang mengalami gangguan. ";
-            
-            if (error.name === 'AbortError') {
-                errorMessage += "Koneksi timeout. Silakan coba lagi dengan pertanyaan yang lebih singkat.";
-            } else if (error.message.includes('401')) {
-                errorMessage += "Sistem authentication bermasalah. Tim teknis sedang memperbaiki.";
-            } else if (error.message.includes('429')) {
-                errorMessage += "Terlalu banyak permintaan. Silakan coba lagi sebentar.";
-            } else if (error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
-                errorMessage += "Koneksi bermasalah. Pastikan internet Anda stabil dan coba lagi.";
-            } else {
-                errorMessage += "Silakan coba lagi atau hubungi tim support kami.";
-            }
-            
-            aiMessage.innerHTML = errorMessage;
-        } finally {
-            // Re-enable input and button
-            isProcessing = false;
-            sendBtn.disabled = false;
-            userInputField.disabled = false;
-            sendBtn.textContent = "Send";
-            userInputField.focus();
-            
-            // Scroll to bottom
-            chatBox.scrollTop = chatBox.scrollHeight;
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
+
+        let data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        // Process the response
+        aiMessage.innerHTML = markdownToHTML(data.response);
+        
+    } catch (error) {
+        console.error('Error details:', error);
+        aiMessage.classList.remove("thinking");
+        
+        // Provide user-friendly error messages
+        let errorMessage = "Maaf, saya sedang mengalami gangguan. ";
+        
+        if (error.message.includes('401')) {
+            errorMessage += "Sistem authentication bermasalah. Tim teknis sedang memperbaiki.";
+        } else if (error.message.includes('429')) {
+            errorMessage += "Terlalu banyak permintaan. Silakan coba lagi sebentar.";
+        } else if (error.message.includes('fetch')) {
+            errorMessage += "Koneksi bermasalah. Pastikan internet Anda stabil.";
+        } else {
+            errorMessage += "Silakan coba lagi atau hubungi tim support kami.";
+        }
+        
+        aiMessage.innerHTML = errorMessage;
     }
+
+    document.getElementById("user-input").value = "";
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
 
     function markdownToHTML(text) {
         return text
             .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // Bold (**text**)
             .replace(/\*(.*?)\*/g, "<em>$1</em>") // Italic (*text*)
-            .replace(/###\s*(.*?)(\n|$)/g, "<li>$1</li>") // List items (###)
-            .replace(/\n/g, "<br>") // Line breaks
-            .replace(/(<li>.*?<\/li>)/g, "<ul>$1</ul>"); // Wrap list items in <ul>
+            .replace(/###\s*(.*?)\n/g, "<li>$1</li>") // Daftar poin (###)
+            .replace(/\n/g, "<br>") // Enter agar setiap baris terlihat
+            .replace(/(<li>.*?<\/li>)/g, "<ul>$1</ul>"); // Bungkus daftar dalam <ul>
     }
-
-    // Focus on input when page loads
-    window.addEventListener('load', function() {
-        document.getElementById("user-input").focus();
-    });
   </script>
   
 </body>
