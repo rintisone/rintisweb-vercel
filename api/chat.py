@@ -27,7 +27,7 @@ class handler(BaseHTTPRequestHandler):
             # Initialize OpenAI client
             client = OpenAI(
                 base_url="https://openrouter.ai/api/v1",
-                api_key="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"
+                api_key="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"
             )
             
             INSTRUCTIONS = """nama kamu rintis,Kamu adalah asisten virtual yang ramah, responsif, dan solutif, siap membantu pelanggan RintisOne dalam memahami layanan, menyelesaikan kendala teknis, menjawab pertanyaan umum, 
@@ -47,7 +47,7 @@ Daftar member RintisOne:
             
             # Make API call using OpenAI client
             response = client.chat.completions.create(
-                model="deepseek/deepseek-r1-0528:free",
+                model="mistralai/mistral-small-3.2-24b-instruct:free",
                 messages=[
                     {"role": "system", "content": INSTRUCTIONS},
                     {"role": "user", "content": prompt}
