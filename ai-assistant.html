@@ -408,7 +408,8 @@
         chatBox.appendChild(aiMessage);
 
         try {
-            let response = await fetch("http://127.0.0.1:5000/chat", {
+            // Fixed: Use relative path for production deployment
+            let response = await fetch("/api/chat", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -416,10 +417,20 @@
                 body: JSON.stringify({ prompt: userInput })
             });
 
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
             let data = await response.json();
+            
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
             aiMessage.innerHTML = markdownToHTML(data.response);
         } catch (error) {
-            aiMessage.innerHTML = "Error connecting to AI.";
+            console.error('Error:', error);
+            aiMessage.innerHTML = `Error: ${error.message}. Please try again.`;
         }
 
         document.getElementById("user-input").value = "";
