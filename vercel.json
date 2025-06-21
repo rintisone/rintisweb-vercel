@@ -1,0 +1,21 @@
+{
+  "functions": {
+    "api/chat.py": {
+      "runtime": "python3.9"
+    }
+  },
+  "routes": [
+    {
+      "src": "/",
+      "dest": "/public/main.html"
+    },
+    {
+      "src": "/main.html",
+      "dest": "/public/main.html"
+    },
+    {
+      "src": "/ai-assistant.html",
+      "dest": "/public/ai-assistant.html"
+    }
+  ]
+}

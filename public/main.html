@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Rintisone</title>
+  <style>
+    :root {
+      --primary: #b71c1c;
+      --accent: #d32f2f;
+      --light: #ffffff;
+      --gray: #f5f5f5;
+      --text: #333;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      scroll-behavior: smooth;
+    }
+
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(to bottom, #ffffff, #b71c1ccc);
+  color: var(--text);
+}
+
+    /* Navbar */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background: #b71c1ccc;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 0 12px rgba(183, 28, 28, 0.5);
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 50px;
+      z-index: 1000;
+      transform: translateY(-100%);
+      opacity: 0;
+      animation: slideDownFade 0.8s ease-out forwards;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      font-weight: bold;
+      font-size: 1.5rem;
+    }
+
+    .logo img {
+      height: 40px;
+      margin-right: 10px;
+      filter: drop-shadow(0 0 6px #ffc1c1);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+    }
+
+    .nav-links a {
+      color: white;
+      text-decoration: none;
+      margin-left: 30px;
+      font-size: 1rem;
+      position: relative;
+      transition: color 0.3s ease;
+    }
+
+    .nav-links a::after {
+      content: "";
+      position: absolute;
+      width: 0%;
+      height: 2px;
+      left: 0;
+      bottom: -5px;
+      background-color: white;
+      transition: width 0.3s ease;
+    }
+
+    .nav-links a:hover {
+      color: #ffeaea;
+    }
+
+    .nav-links a:hover::after {
+      width: 100%;
+    }
+
+    /* Menu Button - Hidden by default */
+    .menu-button {
+      display: none;
+      background: none;
+      border: none;
+      color: white;
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 5px;
+      transition: transform 0.3s ease;
+    }
+
+    .menu-button:hover {
+      transform: scale(1.1);
+    }
+
+    /* Dropdown Menu */
+    .dropdown-menu {
+      position: absolute;
+      top: 100%;
+      right: 50px;
+      background: rgba(183, 28, 28, 0.95);
+      backdrop-filter: blur(12px);
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      padding: 10px 0;
+      min-width: 150px;
+      display: none;
+      animation: dropdownFade 0.3s ease forwards;
+    }
+
+    .dropdown-menu.show {
+      display: block;
+    }
+
+    .dropdown-menu a {
+      display: block;
+      color: white;
+      text-decoration: none;
+      padding: 12px 20px;
+      font-size: 1rem;
+      transition: background-color 0.3s ease;
+      margin: 0;
+    }
+
+    .dropdown-menu a:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .dropdown-menu a::after {
+      display: none;
+    }
+
+    /* Hero */
+    .section {
+      width: 100%;
+      min-height: 100vh;
+      padding: 80px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: fadeInUp 1s ease forwards;
+    }
+
+    .hero {
+      flex-direction: column;
+      text-align: center;
+      position: relative;
+      z-index: 1;
+      background-color: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(4px);
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      background: url("main.jpg") center/cover no-repeat;
+      filter: blur(12px);
+      z-index: -1;
+      transform: scale(1.05);
+    }
+
+    .hero h1,
+    .hero p {
+      color: white;
+      text-shadow: 0 0 5px #a22e2e, 0 0 10px #a22e2e;
+      z-index: 2;
+    }
+
+    .hero h1 {
+      font-size: 3rem;
+      margin-bottom: 20px;
+    }
+
+    .hero p {
+      font-size: 1.2rem;
+      max-width: 600px;
+      margin-bottom: 30px;
+    }
+
+    .hero button {
+      padding: 12px 25px;
+      font-size: 1rem;
+      background-color: var(--primary);
+      color: var(--light);
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      box-shadow: 0 0 12px white;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .hero button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 20px rgba(183, 28, 28, 0.9);
+      background-color: var(--accent);
+    }
+
+    /* Layout Grid */
+    .grid {
+      display: flex;
+      gap: 40px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    .grid img {
+      flex: 1 1 45%;
+      max-width: 500px;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+
+    .grid .text {
+      flex: 1 1 45%;
+    }
+
+    .grid h2 {
+      font-size: 2.5rem;
+      color: var(--primary);
+      margin-bottom: 16px;
+    }
+
+    .grid p, .grid li {
+      font-size: 1.2rem;
+      color: #444;
+      line-height: 1.6;
+    }
+
+    ul {
+      padding-left: 20px;
+    }
+
+    /* CTA */
+    .cta {
+      background: linear-gradient(to bottom, #b71c1c, #8e0000);
+      color: white;
+      text-align: center;
+      flex-direction: column;
+    }
+
+    .p {
+      font-size: 50px;
+    }
+
+    .cta h2 {
+      font-size: 3rem;
+      margin-bottom: 16px;
+    }
+
+    .cta p {
+      font-size: 1.5rem;
+      margin-bottom: 25px;
+      max-width: 600px;
+    }
+
+    .cta button {
+      background-color: white;
+      color: var(--primary);
+      font-weight: bold;
+      padding: 24px 50px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .cta button:hover {
+      background: #fce2e2;
+      transform: scale(1.05);
+    }
+
+    footer {
+      background-color: #222;
+      color: #ddd;
+      text-align: center;
+      padding: 30px 20px;
+      font-size: 0.9rem;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes slideDownFade {
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes dropdownFade {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Media Query for Portrait Mode (width <= height) */
+    @media (max-aspect-ratio: 1/1) {
+      .navbar {
+        padding: 15px 20px;
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      .menu-button {
+        display: block;
+      }
+
+      .dropdown-menu {
+        right: 20px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .navbar {
+        padding: 15px 20px;
+      }
+
+      .dropdown-menu {
+        right: 20px;
+      }
+
+      .grid {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .grid img {
+        max-width: 100%;
+      }
+
+      .hero h1 {
+        font-size: 2.2rem;
+      }
+      html {
+        scroll-behavior: smooth;
+      } 
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <div class="navbar">
+    <div class="logo">
+      <img src="RintisLogo.png" alt="Logo" />
+      <a href="main.html" style="color:white; text-decoration:none;">RintisOne</a>
+    </div>
+    <div class="nav-links">
+      <a href="#">Home</a>
+      <a href="#features">Our Offers</a>
+      <a href="#about">About Us</a>
+      <a href="#contact">Contact</a>
+    </div>
+    <button class="menu-button" onclick="toggleDropdown()">☰</button>
+    <div class="dropdown-menu" id="dropdownMenu">
+      <a href="#">Home</a>
+      <a href="#features">Our Offers</a>
+      <a href="#about">About Us</a>
+      <a href="#contact">Contact</a>
+    </div>
+  </div>
+
+  <!-- Hero Section -->
+  <section class="section hero">
+    <h1>Welcome to RintisOne</h1>
+    <p>Mitra ekspansi dan sustainment produk & jasa Anda. Meningkatkan jangkauan audiens melalui teknologi cerdas & inovasi digital.</p>
+    <button onclick="location.href='ai-assistant.html'">Try Our AI Assistant</button>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="section features">
+    <div class="grid">
+      <div class="text">
+        <h2>What We Offer</h2>
+        <p><strong>Maksimalkan ekspansi, optimalkan kepercayaan.</strong></p>
+        <ul>
+          <li><strong>Survei Kampus Terstruktur</strong>: Pemetaan menyeluruh terhadap ekosistem universitas, UMKM, dan stakeholder kampus.</li>
+          <li><strong>Analisis Riset Berbasis AI</strong>: Insight strategis dari data real-time yang diproses cepat dan akurat.</li>
+          <li><strong>Stakeholder Mapping & Edukasi Pasar</strong>: Menemukan titik implementasi terbaik dan membangun pemahaman yang menyeluruh.</li>
+          <li><strong>Promosi Komunitas & Onboarding Mahasiswa</strong>: Meningkatkan adopsi produk melalui komunikasi yang tepat sasaran.</li>
+        </ul>
+      </div>
+      <img src="offer.jpg" alt="Layanan RintisOne">
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <section id="about" class="section about">
+    <div class="grid">
+      <img src="about.jpg" alt="Tentang RintisOne">
+      <div class="text">
+        <h2>About RintisOne</h2>
+        <p><strong>Inovasi yang lahir dari lapangan, tumbuh bersama komunitas.</strong></p>
+        <p>RintisOne adalah inisiatif kolaboratif mahasiswa dari berbagai universitas di Pulau Jawa yang bertujuan menjembatani perusahaan dengan ekosistem kampus. Kami memadukan riset lapangan, edukasi komunitas, dan teknologi seperti AI & Blockchain untuk menghasilkan strategi ekspansi yang akurat, transparan, dan berkelanjutan.</p>
+        <p>Dengan tim yang tersebar di berbagai kota dan pendekatan berbasis data nyata, RintisOne hadir sebagai mitra pertumbuhan bisnis yang siap beradaptasi dengan perubahan zaman.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section id="contact" class="section cta">
+    <h2>Start Growing With Us</h2>
+    <p>Hubungi kami hari ini dan temukan bagaimana teknologi kami bisa memperluas dampak bisnis Anda secara eksponensial.</p>
+    <button onclick="location.href='contact.html'">Contact Us</button>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    © 2025 Rintisone. All Rights Reserved. | Developed with ❤️ in Indonesia
+  </footer>
+
+  <script>
+    // Dropdown menu functionality
+    function toggleDropdown() {
+        const dropdown = document.getElementById('dropdownMenu');
+        dropdown.classList.toggle('show');
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+        const dropdown = document.getElementById('dropdownMenu');
+        const menuButton = document.querySelector('.menu-button');
+        
+        if (!dropdown.contains(event.target) && !menuButton.contains(event.target)) {
+            dropdown.classList.remove('show');
+        }
+    });
+  </script>
+
+</body>
+</html>
