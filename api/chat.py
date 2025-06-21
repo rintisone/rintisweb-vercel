@@ -65,7 +65,7 @@ Selalu jawab dalam Bahasa Indonesia yang ramah dan profesional."""
                 }
                 
                 payload = {
-                    "model": "openai/gpt-3.5-turbo",  # More reliable model
+                    "model": "deepseek/deepseek-r1-0528:free",  # More reliable model
                     "messages": [
                         {"role": "system", "content": INSTRUCTIONS},
                         {"role": "user", "content": prompt}
