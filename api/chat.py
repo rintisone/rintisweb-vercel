@@ -77,7 +77,7 @@ Selalu jawab dalam Bahasa Indonesia yang ramah dan profesional."""
                 
                 # Add timeout and better error handling
                 response = requests.post(
-                    "https://openrouter.ai/api/v1/chat/completions",
+                    "https://openrouter.ai/api/v1",
                     headers=headers,
                     json=payload,
                     timeout=30
