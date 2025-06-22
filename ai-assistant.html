@@ -389,74 +389,53 @@
         }
     });
 
-async function sendMessage() {
-    let userInput = document.getElementById("user-input").value;
-    if (!userInput.trim()) return;
+    async function sendMessage() {
+        let userInput = document.getElementById("user-input").value;
+        if (!userInput.trim()) return;
 
-    let chatBox = document.getElementById("chat-box");
+        let chatBox = document.getElementById("chat-box");
 
-    // Display user message
-    let userMessage = document.createElement("div");
-    userMessage.className = "user-message";
-    userMessage.textContent = userInput;
-    chatBox.appendChild(userMessage);
+        // Display user message
+        let userMessage = document.createElement("div");
+        userMessage.className = "user-message";
+        userMessage.textContent = userInput;
+        chatBox.appendChild(userMessage);
 
-    // Show AI response placeholder
-    let aiMessage = document.createElement("div");
-    aiMessage.className = "ai-message thinking";
-    aiMessage.innerHTML = "Rintis sedang mengetik...";
-    chatBox.appendChild(aiMessage);
+        // Show AI response placeholder
+        let aiMessage = document.createElement("div");
+        aiMessage.className = "ai-message";
+        aiMessage.innerHTML = "Mengetik...";
+        chatBox.appendChild(aiMessage);
 
-    try {
-        // Use the correct API endpoint
-        let response = await fetch("/api/chat", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            },
-            body: JSON.stringify({ prompt: userInput })
-        });
+        try {
+            // Fixed: Use relative path for production deployment
+            let response = await fetch("/api/chat", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ prompt: userInput })
+            });
 
-        // Remove thinking class
-        aiMessage.classList.remove("thinking");
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
 
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            let data = await response.json();
+            
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
+            aiMessage.innerHTML = markdownToHTML(data.response);
+        } catch (error) {
+            console.error('Error:', error);
+            aiMessage.innerHTML = `Error: ${error.message}. Please try again.`;
         }
 
-        let data = await response.json();
-        
-        if (data.error) {
-            throw new Error(data.error);
-        }
-        
-        // Process the response
-        aiMessage.innerHTML = markdownToHTML(data.response);
-        
-    } catch (error) {
-        console.error('Error details:', error);
-        aiMessage.classList.remove("thinking");
-        
-        // Provide user-friendly error messages
-        let errorMessage = "Maaf, saya sedang mengalami gangguan. ";
-        
-        if (error.message.includes('401')) {
-            errorMessage += "Sistem authentication bermasalah. Tim teknis sedang memperbaiki.";
-        } else if (error.message.includes('429')) {
-            errorMessage += "Terlalu banyak permintaan. Silakan coba lagi sebentar.";
-        } else if (error.message.includes('fetch')) {
-            errorMessage += "Koneksi bermasalah. Pastikan internet Anda stabil.";
-        } else {
-            errorMessage += "Silakan coba lagi atau hubungi tim support kami.";
-        }
-        
-        aiMessage.innerHTML = errorMessage;
+        document.getElementById("user-input").value = "";
+        chatBox.scrollTop = chatBox.scrollHeight;
     }
-
-    document.getElementById("user-input").value = "";
-    chatBox.scrollTop = chatBox.scrollHeight;
-}
 
     function markdownToHTML(text) {
         return text
