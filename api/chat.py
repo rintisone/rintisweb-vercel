@@ -29,53 +29,39 @@ class handler(BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps({'error': 'No prompt provided'}).encode())
                 return
             
+            # Use requests instead of OpenAI client to avoid compatibility issues
             try:
-                INSTRUCTIONS = """Nama kamu Rintis. Kamu adalah asisten virtual yang ramah, responsif, dan solutif, siap membantu pelanggan RintisOne dalam memahami layanan, menyelesaikan kendala teknis, menjawab pertanyaan umum, serta memberikan panduan penggunaan platform.
+                INSTRUCTIONS = """nama kamu rintis,Kamu adalah asisten virtual yang ramah, responsif, dan solutif, siap membantu pelanggan RintisOne dalam memahami layanan, menyelesaikan kendala teknis, menjawab pertanyaan umum, serta memberikan panduan penggunaan platform.
 
 RintisOne adalah inisiatif kolaboratif mahasiswa dari berbagai universitas di Pulau Jawa yang bertujuan menjembatani perusahaan dengan ekosistem kampus. Kami memadukan riset lapangan, edukasi komunitas, dan teknologi seperti AI & Blockchain untuk menghasilkan strategi ekspansi yang akurat, transparan, dan berkelanjutan.
 
-Layanan kami:
-- Survei Kampus Terstruktur: Pemetaan menyeluruh terhadap ekosistem universitas, UMKM, dan stakeholder kampus
-- Analisis Riset Berbasis AI: Insight strategis dari data real-time yang diproses cepat dan akurat
-- Stakeholder Mapping & Edukasi Pasar: Menemukan titik implementasi terbaik dan membangun pemahaman yang menyeluruh
-- Promosi Komunitas & Onboarding Mahasiswa: Meningkatkan adopsi produk melalui komunikasi yang tepat sasaran
-
-Tim RintisOne:
-- Pandu Bagus Witjaksono Athallah (Founder), mahasiswa Universitas Padjajaran
-- Sabdo Dwiyantoro Aji, mahasiswa Universitas Brawijaya
-- Fawwaz Absyar Rifai, mahasiswa Universitas Sebelas Maret
-- Sultan Alexander Muhammad Rasyid, mahasiswa Institut Pertanian Bogor
-- Fadhli Luthfanhadi, mahasiswa Universitas Diponegoro
-- Lalu Muhammad Zidan Alfinly, mahasiswa Universitas Indonesia
-- Silvan Nando Himawan, mahasiswa Universitas Pembangunan Nasional "Veteran" Yogyakarta
-
-Selalu jawab dalam Bahasa Indonesia yang ramah dan profesional."""
+Daftar member RintisOne:
+- Pandu Bagus Witjaksono Athallah (Founder), student at Universitas Padjajaran
+- Sabdo Dwiyantoro Aji, student at Universitas Brawijaya
+- Fawwaz Absyar Rifai, student at Universitas Sebelas Maret
+- Sultan Alexander Muhammad Rasyid, student at Institut Pertanian Bogor
+- Fadhli Luthfanhadi, student at Universitas Diponegoro
+- Lalu Muhammad Zidan Alfinly, student at Universitas Indonesia
+- Silvan Nando Himawan, student at Universitas Pembangunan Nasional "Veteran" Yogyakarta"""
                 
-                # Get API key from environment variable (more secure)
-                api_key = os.environ.get('OPENROUTER_API_KEY')
-                if not api_key:
-                    # Fallback to hardcoded key (less secure, but for testing)
-                    api_key = "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"
-                
+                # Direct API call using requests
                 headers = {
-                    'Authorization': f'Bearer {api_key}',
+                    'Authorization': 'Bearer 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',
                     'Content-Type': 'application/json',
-                    'HTTP-Referer': 'https://rintisone.vercel.app',  # Update with your actual domain
+                    'HTTP-Referer': 'https://your-vercel-app.vercel.app',
                     'X-Title': 'RintisOne AI Assistant'
                 }
                 
                 payload = {
-                    "model": "openai/gpt-3.5-turbo",  # More reliable model
+                    "model": "deepseek/deepseek-r1-0528:free",
                     "messages": [
                         {"role": "system", "content": INSTRUCTIONS},
                         {"role": "user", "content": prompt}
                     ],
-                    "max_tokens": 800,
-                    "temperature": 0.7,
-                    "stream": False
+                    "max_tokens": 1000,
+                    "temperature": 0.7
                 }
                 
-                # Add timeout and better error handling
                 response = requests.post(
                     "https://openrouter.ai/api/v1/chat/completions",
                     headers=headers,
@@ -83,38 +69,19 @@ Selalu jawab dalam Bahasa Indonesia yang ramah dan profesional."""
                     timeout=30
                 )
                 
-                # Debug logging
-                print(f"API Response Status: {response.status_code}")
-                print(f"API Response Headers: {dict(response.headers)}")
-                
-                if response.status_code == 401:
+                if response.status_code != 200:
+                    error_detail = response.text
                     self.wfile.write(json.dumps({
-                        'error': 'Authentication failed. Please check API key configuration.'
+                        'error': f'API Error {response.status_code}: {error_detail}'
                     }).encode())
-                    return
-                elif response.status_code == 429:
-                    # Fallback response for rate limiting
-                    fallback_response = {
-                        'response': 'Maaf, sistem sedang sibuk. Sebagai asisten RintisOne, saya siap membantu Anda dengan informasi tentang layanan kami. RintisOne menyediakan survei kampus terstruktur, analisis riset berbasis AI, stakeholder mapping, dan promosi komunitas untuk membantu ekspansi bisnis Anda di ekosistem kampus. Ada yang bisa saya bantu?'
-                    }
-                    self.wfile.write(json.dumps(fallback_response).encode())
-                    return
-                elif response.status_code != 200:
-                    # Try fallback response
-                    fallback_response = {
-                        'response': f'Halo! Saya Rintis, asisten virtual RintisOne. Maaf sedang mengalami gangguan teknis. RintisOne adalah platform yang menghubungkan perusahaan dengan ekosistem kampus melalui riset, AI, dan blockchain. Tim kami tersebar di berbagai universitas di Pulau Jawa. Ada yang bisa saya bantu terkait layanan kami?'
-                    }
-                    self.wfile.write(json.dumps(fallback_response).encode())
                     return
                 
                 response_data = response.json()
                 
                 if 'error' in response_data:
-                    # Provide fallback response
-                    fallback_response = {
-                        'response': 'Halo! Saya Rintis dari RintisOne. Saat ini sistem AI sedang maintenance, namun saya tetap bisa membantu Anda dengan informasi dasar tentang layanan kami. RintisOne menyediakan layanan survei kampus, analisis AI, dan strategi ekspansi bisnis. Ada pertanyaan spesifik yang bisa saya jawab?'
-                    }
-                    self.wfile.write(json.dumps(fallback_response).encode())
+                    self.wfile.write(json.dumps({
+                        'error': f'AI API Error: {response_data["error"]}'
+                    }).encode())
                     return
                 
                 ai_response = response_data['choices'][0]['message']['content'].strip()
@@ -123,29 +90,21 @@ Selalu jawab dalam Bahasa Indonesia yang ramah dan profesional."""
                 self.wfile.write(json.dumps(result).encode())
                 
             except requests.exceptions.Timeout:
-                fallback_response = {
-                    'response': 'Halo! Saya Rintis, asisten RintisOne. Koneksi sedikit lambat, tapi saya tetap di sini. RintisOne membantu perusahaan mengekspansi bisnis melalui ekosistem kampus dengan riset terstruktur dan teknologi AI. Ada yang ingin Anda ketahui tentang layanan kami?'
-                }
-                self.wfile.write(json.dumps(fallback_response).encode())
+                error_response = {'error': 'AI service timeout. Please try again.'}
+                self.wfile.write(json.dumps(error_response).encode())
             except requests.exceptions.RequestException as req_error:
-                fallback_response = {
-                    'response': 'Halo! Saya Rintis dari RintisOne. Sedang ada masalah jaringan, tapi saya masih bisa membantu dengan informasi dasar. RintisOne adalah inisiatif mahasiswa yang menghubungkan bisnis dengan kampus melalui survei, AI, dan blockchain. Tim kami ada di 7 universitas di Pulau Jawa. Ada yang bisa dibantu?'
-                }
-                self.wfile.write(json.dumps(fallback_response).encode())
+                error_response = {'error': f'Network error: {str(req_error)}'}
+                self.wfile.write(json.dumps(error_response).encode())
             except Exception as api_error:
-                fallback_response = {
-                    'response': 'Halo! Saya Rintis, asisten virtual RintisOne. Meskipun sistem AI sedang bermasalah, saya tetap siap membantu. RintisOne menyediakan layanan ekspansi bisnis melalui kampus dengan pendekatan riset dan teknologi. Apakah ada informasi khusus yang Anda butuhkan?'
-                }
-                self.wfile.write(json.dumps(fallback_response).encode())
+                error_response = {'error': f'AI service error: {str(api_error)}'}
+                self.wfile.write(json.dumps(error_response).encode())
             
         except json.JSONDecodeError:
-            error_response = {'error': 'Format data tidak valid'}
+            error_response = {'error': 'Invalid JSON in request body'}
             self.wfile.write(json.dumps(error_response).encode())
         except Exception as e:
-            fallback_response = {
-                'response': 'Halo! Saya Rintis dari RintisOne. Maaf ada gangguan sistem, tapi saya tetap di sini untuk membantu. RintisOne adalah platform yang menghubungkan perusahaan dengan ekosistem kampus. Ada pertanyaan tentang layanan kami?'
-            }
-            self.wfile.write(json.dumps(fallback_response).encode())
+            error_response = {'error': f'Server error: {str(e)}'}
+            self.wfile.write(json.dumps(error_response).encode())
     
     def do_OPTIONS(self):
         # Handle preflight CORS requests
