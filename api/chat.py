@@ -46,7 +46,7 @@ Daftar member RintisOne:
                 
                 # Direct API call using requests
                 headers = {
-                    'Authorization': 'Bearer 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',
+                    'Authorization': 'Bearer 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',
                     'Content-Type': 'application/json',
                     'HTTP-Referer': 'https://your-vercel-app.vercel.app',
                     'X-Title': 'RintisOne AI Assistant'
