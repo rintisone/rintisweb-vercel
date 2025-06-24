@@ -68,7 +68,7 @@ Daftar member RintisOne:
 - Silvan Nando Himawan, student at Universitas Pembangunan Nasional "Veteran" Yogyakarta"""
 
         # Prepare API request
-        api_url = "https://openrouter.ai/api/v1/chat/completions"
+        api_url = "https://openrouter.ai/api/v1"
         
         # Get API key from environment variable (recommended) or fallback to hardcoded
         api_key = os.environ.get('OPENROUTER_API_KEY', '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')
