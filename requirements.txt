@@ -1,1 +1,3 @@
-openai>=1.30.0
+# requirements.txt - Empty file or minimal dependencies
+# Vercel Python runtime includes most standard library modules
+# urllib and json are part of Python standard library
