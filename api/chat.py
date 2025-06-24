@@ -1,37 +1,60 @@
 # api/chat.py
-from http.server import BaseHTTPRequestHandler
 import json
-import requests
+import urllib.request
+import urllib.parse
 import os
 
-class handler(BaseHTTPRequestHandler):
-    def do_POST(self):
-        try:
-            # Set CORS headers
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
-            self.send_header('Access-Control-Allow-Headers', 'Content-Type')
-            self.end_headers()
+def handler(request):
+    # Handle CORS preflight requests
+    if request.method == 'OPTIONS':
+        return {
+            'statusCode': 200,
+            'headers': {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type',
+            },
+            'body': ''
+        }
+    
+    # Only allow POST requests
+    if request.method != 'POST':
+        return {
+            'statusCode': 405,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+            },
+            'body': json.dumps({'error': 'Method not allowed'})
+        }
+    
+    try:
+        # Parse request body
+        if hasattr(request, 'body'):
+            body = request.body
+        else:
+            body = request.get_body()
             
-            # Read request body
-            content_length = int(self.headers.get('Content-Length', 0))
-            if content_length == 0:
-                self.wfile.write(json.dumps({'error': 'No data received'}).encode())
-                return
-                
-            post_data = self.rfile.read(content_length)
-            data = json.loads(post_data.decode('utf-8'))
+        if isinstance(body, bytes):
+            body = body.decode('utf-8')
+        elif body is None:
+            body = '{}'
             
-            prompt = data.get('prompt', '').strip()
-            if not prompt:
-                self.wfile.write(json.dumps({'error': 'No prompt provided'}).encode())
-                return
-            
-            # Use requests instead of OpenAI client to avoid compatibility issues
-            try:
-                INSTRUCTIONS = """nama kamu rintis,Kamu adalah asisten virtual yang ramah, responsif, dan solutif, siap membantu pelanggan RintisOne dalam memahami layanan, menyelesaikan kendala teknis, menjawab pertanyaan umum, serta memberikan panduan penggunaan platform.
+        data = json.loads(body)
+        prompt = data.get('prompt', '').strip()
+        
+        if not prompt:
+            return {
+                'statusCode': 400,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*',
+                },
+                'body': json.dumps({'error': 'No prompt provided'})
+            }
+        
+        # System instructions
+        INSTRUCTIONS = """nama kamu rintis,Kamu adalah asisten virtual yang ramah, responsif, dan solutif, siap membantu pelanggan RintisOne dalam memahami layanan, menyelesaikan kendala teknis, menjawab pertanyaan umum, serta memberikan panduan penggunaan platform.
 
 RintisOne adalah inisiatif kolaboratif mahasiswa dari berbagai universitas di Pulau Jawa yang bertujuan menjembatani perusahaan dengan ekosistem kampus. Kami memadukan riset lapangan, edukasi komunitas, dan teknologi seperti AI & Blockchain untuk menghasilkan strategi ekspansi yang akurat, transparan, dan berkelanjutan.
 
@@ -43,81 +66,106 @@ Daftar member RintisOne:
 - Fadhli Luthfanhadi, student at Universitas Diponegoro
 - Lalu Muhammad Zidan Alfinly, student at Universitas Indonesia
 - Silvan Nando Himawan, student at Universitas Pembangunan Nasional "Veteran" Yogyakarta"""
-                
-                # Direct API call using requests
-                headers = {
-                    'Authorization': 'Bearer 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',
-                    'Content-Type': 'application/json',
-                    'HTTP-Referer': 'https://your-vercel-app.vercel.app',
-                    'X-Title': 'RintisOne AI Assistant'
-                }
-                
-                payload = {
-                    "model": "deepseek/deepseek-r1-0528:free",
-                    "messages": [
-                        {"role": "system", "content": INSTRUCTIONS},
-                        {"role": "user", "content": prompt}
-                    ],
-                    "max_tokens": 1000,
-                    "temperature": 0.7
-                }
-                
-                response = requests.post(
-                    "https://openrouter.ai/api/v1/chat/completions",
-                    headers=headers,
-                    json=payload,
-                    timeout=30
-                )
-                
-                if response.status_code != 200:
-                    error_detail = response.text
-                    self.wfile.write(json.dumps({
-                        'error': f'API Error {response.status_code}: {error_detail}'
-                    }).encode())
-                    return
-                
-                response_data = response.json()
+
+        # Prepare API request
+        api_url = "https://openrouter.ai/api/v1/chat/completions"
+        
+        # Get API key from environment variable (recommended) or fallback to hardcoded
+        api_key = os.environ.get('OPENROUTER_API_KEY', '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')
+        
+        headers = {
+            'Authorization': f'Bearer {api_key}',
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://rintisone.vercel.app',
+            'X-Title': 'RintisOne AI Assistant'
+        }
+        
+        payload = {
+            "model": "deepseek/deepseek-r1-0528:free",
+            "messages": [
+                {"role": "system", "content": INSTRUCTIONS},
+                {"role": "user", "content": prompt}
+            ],
+            "max_tokens": 1000,
+            "temperature": 0.7
+        }
+        
+        # Make API request using urllib (more compatible with Vercel)
+        req_data = json.dumps(payload).encode('utf-8')
+        req = urllib.request.Request(api_url, data=req_data)
+        
+        for key, value in headers.items():
+            req.add_header(key, value)
+        
+        try:
+            with urllib.request.urlopen(req, timeout=30) as response:
+                response_data = json.loads(response.read().decode('utf-8'))
                 
                 if 'error' in response_data:
-                    self.wfile.write(json.dumps({
-                        'error': f'AI API Error: {response_data["error"]}'
-                    }).encode())
-                    return
+                    return {
+                        'statusCode': 500,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*',
+                        },
+                        'body': json.dumps({'error': f'AI API Error: {response_data["error"]}'})
+                    }
                 
                 ai_response = response_data['choices'][0]['message']['content'].strip()
-                result = {'response': ai_response}
                 
-                self.wfile.write(json.dumps(result).encode())
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*',
+                    },
+                    'body': json.dumps({'response': ai_response})
+                }
                 
-            except requests.exceptions.Timeout:
-                error_response = {'error': 'AI service timeout. Please try again.'}
-                self.wfile.write(json.dumps(error_response).encode())
-            except requests.exceptions.RequestException as req_error:
-                error_response = {'error': f'Network error: {str(req_error)}'}
-                self.wfile.write(json.dumps(error_response).encode())
-            except Exception as api_error:
-                error_response = {'error': f'AI service error: {str(api_error)}'}
-                self.wfile.write(json.dumps(error_response).encode())
-            
-        except json.JSONDecodeError:
-            error_response = {'error': 'Invalid JSON in request body'}
-            self.wfile.write(json.dumps(error_response).encode())
+        except urllib.error.HTTPError as e:
+            error_msg = f'HTTP Error {e.code}: {e.reason}'
+            return {
+                'statusCode': 500,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*',
+                },
+                'body': json.dumps({'error': error_msg})
+            }
+        except urllib.error.URLError as e:
+            return {
+                'statusCode': 500,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*',
+                },
+                'body': json.dumps({'error': f'Network error: {str(e.reason)}'})
+            }
         except Exception as e:
-            error_response = {'error': f'Server error: {str(e)}'}
-            self.wfile.write(json.dumps(error_response).encode())
-    
-    def do_OPTIONS(self):
-        # Handle preflight CORS requests
-        self.send_response(200)
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
-        self.end_headers()
-        
-    def do_GET(self):
-        # Handle GET requests (for testing)
-        self.send_response(200)
-        self.send_header('Content-Type', 'application/json')
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.end_headers()
-        self.wfile.write(json.dumps({'message': 'RintisOne AI API is running', 'status': 'ok'}).encode())
+            return {
+                'statusCode': 500,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*',
+                },
+                'body': json.dumps({'error': f'API request failed: {str(e)}'})
+            }
+            
+    except json.JSONDecodeError:
+        return {
+            'statusCode': 400,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+            },
+            'body': json.dumps({'error': 'Invalid JSON in request body'})
+        }
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+            },
+            'body': json.dumps({'error': f'Server error: {str(e)}'})
+        }
